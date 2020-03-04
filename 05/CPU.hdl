@@ -38,6 +38,59 @@ CHIP CPU {
         addressM[15],    // Address in data memory (of M)
         pc[15];          // address of next instruction
 
-    PARTS:
-    // Put your code here:
+// instruction[15 :: 1 = C instruction, 0 = A instruction
+// A Instruction
+//     instruction[0..14] = constant value
+// C Instruction
+//     Instruction[0..2] = jump command
+//         instruction[0] = j3 jump if < 0
+//         instruction[1] = j2 jump if 0
+//         instruction[2] = j1 jump if > 0
+//     Instruction[3..5] = destination
+//         instruction[3] = d3 write to memory
+//         instruction[4] = d2 load D register
+//         instruction[5] = d1 load A register
+//     Instruction[6..11] = c portion
+//         Instruction[6] = c6 no
+//         Instruction[7] = c5 f
+//         Instruction[8] = c4 my
+//         Instruction[9] = c3 zy
+//         Instruction[10] = c2 nx
+//         Instruction[11] = c1 zx
+//     Instruction[12] = a
+
+PARTS:
+    Not(in=instruction[15], out=notin);
+    Mux16(a=aluout, b=instruction[0..15], sel=notin, out=mux1out);
+
+    Or(a=notin, b=instruction[5], out=loadareg);
+    ARegister(in=mux1out, load=loadareg, out=reg1out, out[0..14]=addressM);
+
+
+    Mux16(a=reg1out, b=inM, sel=instruction[12], out=mux2out);
+    
+    And(a=instruction[15], b=instruction[4], out=loaddreg);
+    DRegister(in=aluout, load=loaddreg, out=reg2out);
+
+    And(a=instruction[15], b=instruction[3], out=writeM);
+    
+    ALU(x=reg2out, y=mux2out, zx=instruction[11], nx=instruction[10],
+        zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6],
+            out=aluout, out=outM, zr=zr, ng=ng);
+
+    Not(in=zr, out=nzr);
+    Not(in=ng, out=pos);
+    And(a=pos, b=nzr, out=posnzr);
+    And(a=instruction[15], b=instruction[0], out=jgt);
+    And(a=instruction[15], b=instruction[1], out=jeq);
+    And(a=instruction[15], b=instruction[2], out=jlt);
+
+    And(a=jgt, b=posnzr, out=ld1);
+    And(a=jeq, b=zr, out=ld2);
+    And(a=jlt, b=ng, out=ld3);
+
+    Or(a=ld1, b=ld2, out=ldt);
+    Or(a=ldt, b=ld3, out=ld);
+
+    PC(in=reg1out, load=ld, inc=true, reset=reset, out[0..14]=pc);
 }

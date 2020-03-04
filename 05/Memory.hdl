@@ -28,9 +28,11 @@ CHIP Memory {
 
 PARTS:
     DMux4Way(in=load, sel=address[13..14], a=ram1, b=ram2, c=screenin, d=keyboardo);
-    Or(a=ram1, b=ram2, out=rami)
-    RAM16K(in=in, load=rami, address=address[0..12], out=ramo);
-    Screen(in=in, load=, address=address[0..12], out=screeno,)
-    Keyboard(out=k)
+    Or(a=ram1, b=ram2, out=rami);
+
+    RAM16K(in=in, load=rami, address=address[0..13], out=ramo);
+    Screen(in=in, load=screenin, address=address[0..12], out=screeno);
+    Keyboard(out=k);
+    
     Mux4Way16(a=ramo, b=ramo, c=screeno, d=k, sel=address[13..14], out=out);
 }
