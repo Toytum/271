@@ -1,4 +1,4 @@
-
+require_relative 'symbol_table'
 class Parser
     attr_accessor :COMP, :DEST, :JUMP
     COMP = {'0'=>'101010', '1'=>'111111', '-1'=>'111010', 
@@ -20,32 +20,36 @@ class Parser
 
     JUMP = {'null'=>'000', 'JGT'=>'001', 'JEQ'=>'010',
             'JGE'=>'011', 'JLT'=>'100', 'JNE'=>'101',
-            'JLE'=>'110', 'JMP'=>'111'
-    }
-
+            'JLE'=>'110', 'JMP'=>'111'}
+    SYMBOLS = { "SP" => 0, "LCL" => 1, "ARG" => 2, "THIS" => 3, "That" => 4,  "R0" => 0, "R1" => 1, "R2" => 2, "R3" => 3,
+                "R4" => 4, "R5" => 5, "R6" => 6, "R7" => 7, "R8" => 8, "R9" => 9, "R10" => 10, "R11" => 11, "R12" => 12, "R13" => 13,
+                "R14" => 14, "R15" => 15, "SCREEN" => 16834, "KBD" => 24576
+            }
+            
+    
     def initialize(input_file = nil)
         @line_num = 0
         @fileIn = input_file
+        @newIndex = 16
     end
+
 
     def parse_input
         @fileIn.gsub(/\r\n+/, "\n")
         @fileIn.each_line do |line|
-            if command_type(line) == 'C'
-                puts line
+            if command_type(line) == "comp"
                 line = strip_whitespace(line)
-                puts "Stripped: #{line}"
                 line = standardize_line(line)
                 line = strip_whitespace(line)
-                puts "Standardized: #{line}"
                 line = translate_standard(line)
-                puts "Binary: #{line}"
                 line = line[0] + line[1] + line[2]
                 puts line
-            elsif command_type(line) == 'A'
+            elsif command_type(line) == "address"
                 puts "A-Type"
-                atlinestart = 0
+                atlinestart = "0"
+                symbol_val(line)
                 line = atlinestart.concat(line)
+                puts line
             end
         end
     end
@@ -57,10 +61,10 @@ class Parser
     end
 
     def command_type(command)
-        if command == /^@.+/
-            return 'A'
+        if command.include?("@")
+            return "address"
         else 
-            return 'C'
+            return "comp"
         end
     end
 
@@ -78,5 +82,23 @@ class Parser
     def translate_standard(command)
         command_list = command.split(/[;-=]/)
         return DEST[command_list[0]], COMP[command_list[1]], JUMP[command_list[2]]
+    end
+
+    def contains?(symbol)
+        sybmols.key?(symbol)
+    end
+
+    def symbol_val(command)
+        command = command.split(/=/)
+        return SYMBOLS[command[0]]
+    end
+
+    def add_symbol(command)
+        unless SYMBOLS.include?(symbol(command))
+            SYMBOLS[symbol(command)] = @newIndex
+            puts command
+            puts SYMBOLS[symbol(command)]
+            @newIndex += 1
+        end
     end
 end
