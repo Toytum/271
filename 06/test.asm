@@ -1,4 +1,6 @@
-D=D+1;null
-D=D+1
+D=M+1;null
+D=A+1
+D=M+1;null
 D
 @1
+@2

@@ -1,4 +1,3 @@
-require_relative 'symbol_table'
 class Parser
     attr_accessor :COMP, :DEST, :JUMP
     COMP = {'0'=>'101010', '1'=>'111111', '-1'=>'111010', 
@@ -31,25 +30,24 @@ class Parser
         @line_num = 0
         @fileIn = input_file
         @newIndex = 16
+        @line_uses_memory = false
     end
 
-
-    def parse_input
+    def parse_input(output_file)
         @fileIn.gsub(/\r\n+/, "\n")
         @fileIn.each_line do |line|
             if command_type(line) == "comp"
                 line = strip_whitespace(line)
                 line = standardize_line(line)
+                prefix = set_prefix(line)
                 line = strip_whitespace(line)
                 line = translate_standard(line)
-                line = line[0] + line[1] + line[2]
-                puts line
+                line = prefix + line[0] + line[1] + line[2] + "\n"
+                output_file.write(line)
             elsif command_type(line) == "address"
-                puts "A-Type"
-                atlinestart = "0"
-                symbol_val(line)
-                line = atlinestart.concat(line)
-                puts line
+                strip_whitespace(line)
+                line = constant_add(line) + "\n"
+                output_file.write(line)
             end
         end
     end
@@ -65,6 +63,26 @@ class Parser
             return "address"
         else 
             return "comp"
+        end
+    end
+
+    def uses_memory?(command)
+        command_list = command.split(/[;-=]/)
+        if command_list[0].include?("M")
+            @line_uses_memory = true
+        end
+        if command_list[1].include?("M")
+            @line_uses_memory = true
+        end
+    end
+
+    def set_prefix(command)
+        uses_memory?(command)
+        if @line_uses_memory == true
+            @line_uses_memory = false
+            return "1111"
+        else
+            return "1110"
         end
     end
 
@@ -85,20 +103,33 @@ class Parser
     end
 
     def contains?(symbol)
-        sybmols.key?(symbol)
+        SYMBOLS.key?(symbol)
     end
 
     def symbol_val(command)
-        command = command.split(/=/)
-        return SYMBOLS[command[0]]
+        return SYMBOLS[command]
     end
 
     def add_symbol(command)
-        unless SYMBOLS.include?(symbol(command))
-            SYMBOLS[symbol(command)] = @newIndex
-            puts command
-            puts SYMBOLS[symbol(command)]
+        unless SYMBOLS.include?(symbol_val(command))
+            SYMBOLS[symbol_val(command)] = @newIndex
             @newIndex += 1
         end
+    end
+
+    def type_of_add?(symbol)
+        strip_whitespace(symbol)
+        symbol = symbol[1..-1]
+        symbol = symbol.to_s
+        # puts symbol
+        if symbol == (/\d/)
+            # puts "Constant Address"
+        else
+            # puts "Variable Address"
+        end
+    end
+
+    def constant_add(command)
+        return command.split('@')[1].to_i.to_s(2).rjust(16,'0')
     end
 end
