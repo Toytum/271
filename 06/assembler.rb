@@ -1,6 +1,6 @@
 require_relative 'parser'
-
-assemblyIn = File.read("test.asm")
+input = "#{ARGV[0]}"
+assemblyIn = File.read(input)
 parser = Parser.new(assemblyIn)
 output = File.open("outputfile.txt", 'w')
 
